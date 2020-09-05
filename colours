@@ -1,0 +1,53 @@
+declare -A colours=(
+    ["bold"]=1
+    ["dim"]=2
+    ["underline"]=4
+    ["blink"]=5
+    ["reverse"]=7
+    ["hidden"]=8
+
+    ["reset"]=0
+    ["fdefault"]=39
+    ["fblack"]=30
+    ["fred"]=31
+    ["fgreen"]=32
+    ["fyellow"]=33
+    ["fblue"]=34
+    ["fmagenta"]=35
+    ["fcyan"]=36
+    ["flightgrey"]=37
+    ["fdarkgrey"]=90
+    ["fwhite"]=97
+
+    ["bdefault"]=49
+    ["bblack"]=40
+    ["bred"]=41
+    ["bgreen"]=42
+    ["byellow"]=43
+    ["bblue"]=44
+    ["bmagenta"]=45
+    ["bcyan"]=46
+    ["blightgrey"]=47
+    ["bdarkgrey"]=100
+    ["bwhite"]=107
+)
+
+function get_colour {
+    echo -e "\e[${colours[${1}]}m"
+}
+
+function get_colours {
+    local params=( "$@" )
+    local out="\e["
+    local count="${#params[@]}"
+    local counter=0
+    for i in "${params[@]}";
+        do
+            out+="${colours[${i}]}"
+            let "counter++"
+            [[ $count == $counter ]] || out+=";"
+        done
+    out+="m"
+    echo -e "${out}"
+}
+

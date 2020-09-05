@@ -1,0 +1,9 @@
+paths=( "~/.config/composer/vendor/bin"
+        "/home/chris/go/bin"
+        "/usr/local/go/bin"
+    "/home/chris/.cargo/bin")
+
+for p in "${paths[@]}"
+do
+        [[ ":${PATH}:" != *":${p}:"* ]] && PATH="${PATH}:${p}"
+done

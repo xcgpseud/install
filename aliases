@@ -1,0 +1,39 @@
+# Permissions
+alias ssudo='echo $(cat ~/.bash_files/pw) | sudo -S'
+alias own='sudo chown chris * -R'
+
+# apt
+alias ai='ssudo apt install -y'
+aluas update='ssudo apt update && ssudo apt upgrade -y'
+
+# Bash editing
+alias brc='vim ~/.bashrc'
+alias ba='vim ~/.bash_files/aliases'
+alias bf='vim ~/.bash_files/functions'
+alias bp='vim ~/.bash_files/path'
+alias bc='vim ~/.bash_files/colours'
+alias rl='unalias -a && source ~/.bashrc'
+
+# php
+alias art='sudo php artisan'
+alias phx='vendor/bin/phinx'
+alias phpver='sudo update-alternatives --config php'
+
+# Evaluagent
+alias testsh='docker exec -it evaluagent_application_1 sh'
+alias devsh='docker exec -it ev_evaluagent_1 sh'
+alias reposeval='repos php evaluagent repositories evaluagent'
+
+# Evaluagent IV2
+alias iv2-import='dart integrations-v2:run-all-for-contract'
+alias iv2-dispatch='dart integrations-v2:dispatch-processable-jobs'
+alias iv2-testcon='dart integrations-v2:test-connectors'
+alias iv2-reset='dart integrations-v2:reset-contract'
+
+# Shorteners
+alias mux='tmuxinator'
+
+# Navigation
+alias saveloc='echo -n $PWD | xclip'
+alias loadloc='cd $(xclip -o)
+alias up='cd ..'

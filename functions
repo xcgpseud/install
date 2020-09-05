@@ -1,0 +1,216 @@
+evaluagent=/home/chris/Documents/repos/php/evaluagent-local-development/repositories/evaluagent
+
+## NAVIGATION ##
+
+# Create directory and navigate to it
+mc () {
+        mkdir $1 && cd $1
+}
+
+# Create directory and add a .keep for git structure
+mckeep () {
+        for name in ${@:1}
+        do
+                mkdir ${name}
+                touch ${name}/.keep
+        done
+}
+
+# Navigate to the first directory that matches the shorthand name passed in
+goto () {
+        local dir
+
+        for pc in ${@:1}
+        do
+                dir=$(ls | grep -i "${pc}" -m 1)
+                [[ "${dir}" ]] && cd ${dir}
+        done
+}
+
+# Navigate to the repos folder and then goto () each shorthand directory name consecutively
+repos () {
+        cd ~/Documents/repos
+        goto ${@:1}
+}
+
+## GIT ##
+
+# Parse the current git branch name
+parse_git_branch () {
+     git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/ (\1)/'
+}
+evaluagent=${HOME}/Documents/repos/php/evaluagent-local-development/repositories/evaluagent
+
+# Navigation
+mc () {
+	mkdir $1 && cd $1
+}
+
+goto () {
+	local dir
+
+	for pc in ${@:1}
+	do
+		dir=$(ls | grep -i "${pc}" -m 1)
+		[[ "${dir}" ]] && cd ${dir}
+	done
+}
+
+repos () {
+	cd ${HOME}/Documents/repos
+	goto ${@:1}
+}
+
+# GIT
+
+parse_git_branch () {
+	git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/ (\1)/'
+}
+
+# Update the current branch from the passed branch name, whilst also updating the target branch locally
+updatebranch () {
+        local branch=$(git rev-parse --abbrev-ref HEAD)
+        [[ ! -z "${1}" ]] && local mainBranch="${1}" || local mainBranch="develop"
+        [[ "${branch}" == "${mainBranch}" ]] && echo -e "\e[42mAlready on ${mainBranch}\e[49m" || git checkout "${mainBranch}" && echo -e "\e[42mChecking out ${mainBranch} to update from.\e[49m"
+        echo -e "\e[42mPulling most recent version.\e[49m"
+        git pull || return
+        [[ "${branch}" == "${mainBranch}" ]] && return
+        echo -e "\e[42mHeading back to ${branch}.\e[49m"
+        git checkout "$branch" || return
+        echo -e "\e[42mMerging most recent changes from ${mainBranch} into ${branch}.\e[49m"
+        git merge "$mainBranch" || return
+}
+
+# Get the github repo URL
+ghrepo () {
+        echo $(git remote -v | grep fetch | awk '{print $2}' | sed 's/git@github.com:/http:\/\/github.com\//' | head -n1)
+}
+
+# Open the github webpage for the current repository, in the default browser
+opengh () {
+        local repo=$(ghrepo)
+        local branch=$(git rev-parse --abbrev-ref HEAD)
+        sensible-browser "${repo}/tree/${branch}"
+}
+
+# Open the requested reviews page for the current GH branch
+ghrev () {
+        local repo=$(ghrepo)
+        sensible-browser "${repo}/pulls/review-requested/@me"
+}
+
+# Clone the target repository with ssh
+ghclone () {
+        [[ "${1}" ]] || [[ "${2}" ]] || return
+        git clone git@github.com:${1}/${2}.git
+}
+
+# Set the user config. Pass a username and email
+ghconf () {
+        local user=${1}
+        local email=${2}
+
+        git config --global user.name ${user}
+        git config --global user.email ${email}
+}
+
+# Autocomplete options for the updatebranch () function
+_updatebranch_loader () {
+    branches=$(git branch -l | cut -c3-)
+    COMPREPLY=($(compgen -W "$branches" -- "$2"))
+}
+
+# Tag the autocomplete function on to the updatebranch () function
+complete -F _updatebranch_loader updatebranch
+
+# Evaluagent Specific #
+
+# Fire up the Evaluagent local system
+evalstart () {
+        saveloc
+
+        repos php evaluagent
+        make up
+        reposeval
+        goto evaluagent
+
+        npm run watch
+
+        loadloc
+}
+
+dart () {
+        docker exec -it ev_evaluagent_1 php /var/www/artisan ${@:1}
+}
+_dart () {
+        local cur="${COMP_WORDS[COMP_CWORD]}"
+        local possibilities=$(dart | grep ${cur})
+        COMPREPLY=( $(compgen -W "${possibilities}" -- ${cur}) )
+}
+complete -F _dart dart
+
+iv2rr () {
+        iv2-reset 299
+        iv2-import 299
+        iv2-dispatch
+}
+
+# Evaluagent Testing #
+
+# Run an evaluagent Unit Test, just narrow down the test folder (beginning in tests/Unit)
+etunit () {
+        reposeval
+        sudo make test ARGS=/var/www/tests/Unit/${@:1}
+}
+
+_etunit () {
+        saveloc
+        cd "${evaluagent}/evaluagent/tests/Unit"
+        local cur="${COMP_WORDS[COMP_CWORD]}"
+
+        COMPREPLY=( $(compgen -f ${cur})/ )
+}
+complete -o nospace -F _etunit etunit
+
+etacc () {
+        reposeval
+        sudo make test ARGS=/var/www/tests/Acceptance/${@:1}
+}
+_etacc () {
+        cd "${evaluagent}/evaluagent/tests/Acceptance"
+        local cur="${COMP_WORDS[COMP_CWORD]}"
+
+        COMPREPLY=( $(compgen -f ${cur})/ )
+}
+complete -o nospace -F _etacc etacc
+
+# Search apt and snap for the given string and pretty-print the results
+findapp () {
+    get_colours underline bred fwhite
+    echo '[[SNAP]]'
+    get_colour reset
+    snap find "$1" | grep "$1" -i
+    get_colours underline bred fwhite
+    echo '[[APT]]'
+    get_colour reset
+    apt-cache search "$1" | grep "$1" -i
+}
+
+# Testing
+# git ev-dev= {merge develop into branch } {make fix} {git add} {git commit} {git push}
+git-ev-dev () {
+        local DEFAULT_BRANCH
+
+        [[ "${2}" ]] && DEFAULT_BRANCH="${2}" || DEFAULT_BRANCH='develop'
+
+        [[ "${1}" ]] || return
+
+        git fetch origin "${DEFAULT_BRANCH}":"${DEFAULT_BRANCH}"
+        git merge "${DEFAULT_BRANCH}"
+
+        make fix
+        git add .
+        git commit -m "${1}"
+        git push
+}
+                      

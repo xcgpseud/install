@@ -1,0 +1,27 @@
+additional_files=(
+	"path"
+	"aliases"
+	"functions"
+	"colours"
+	"onloads"
+)
+
+for p in "${additional_files[@]}"
+do
+	if [[ -f "${HOME}/.bash_files/${p}" ]]; then
+		. "${HOME}/.bash_files/${p}"
+	fi
+done
+
+ps1arr=(
+	"$(get_colours underline bold bwhite fblack)"
+	'[\u]'
+	"$(get_colour reset) $(get_colour fmagenta)"
+	'\w'
+	"$(get_colour reset) $(get_colours fred underline)"
+	'$(parse_git_branch)'
+	"$(get_colour reset)"
+	'\n$ '
+)
+
+PS1=$(printf %s "${ps1arr[@]}" $'\n')
